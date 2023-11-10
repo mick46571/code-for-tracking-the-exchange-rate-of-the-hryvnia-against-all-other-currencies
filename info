@@ -1,0 +1,51 @@
+#include <iostream>
+#include <cpp_httplib/httplib.h>  // You can use a library like cpp-httplib to make HTTP requests
+
+const std::string API_KEY = "YOUR_API_KEY";
+const std::string BASE_URL = "https://open.er-api.com/v6/latest/";
+
+// Function to fetch exchange rates for the Hryvnia against all other currencies
+std::map<std::string, double> getExchangeRates() {
+    std::map<std::string, double> exchangeRates;
+
+    // Construct the API URL
+    std::string apiUrl = BASE_URL + "UAH";
+    
+    // Add API key if required by the service
+    if (!API_KEY.empty()) {
+        apiUrl += "?apikey=" + API_KEY;
+    }
+
+    // Make a GET request to the API
+    httplib::Client client("api.open.er-api.com");
+    auto response = client.Get(apiUrl.c_str());
+
+    // Parse the response and extract exchange rates
+    if (response && response->status == 200) {
+        auto json = nlohmann::json::parse(response->body);
+        auto rates = json["rates"];
+
+        for (auto it = rates.begin(); it != rates.end(); ++it) {
+            std::string currency = it.key();
+            double rate = it.value().get<double>();
+            exchangeRates[currency] = rate;
+        }
+    } else {
+        std::cerr << "Error fetching exchange rates: " << response->status << std::endl;
+    }
+
+    return exchangeRates;
+}
+
+int main() {
+    // Fetch exchange rates for the Hryvnia
+    std::map<std::string, double> rates = getExchangeRates();
+
+    // Print exchange rates
+    std::cout << "Exchange Rates for Hryvnia (UAH):\n";
+    for (const auto& pair : rates) {
+        std::cout << pair.first << ": " << pair.second << std::endl;
+    }
+
+    return 0;
+}
